@@ -1,3 +1,4 @@
+#include "response.h"
 #include <netinet/in.h>
 #include <signal.h>
 #include <stddef.h>
@@ -78,20 +79,8 @@ int main() {
         break;
     }
 
-    char header[256]; // buffer to  hold header
-
-    const char *body = "<h1>HELLO WORLD</h1>"; // buffer to hold response body
-    snprintf(header, sizeof header,            // filling header with data
-             "HTTP/1.1 200 OK\r\n"
-             "Content-Type: text/html\r\n"
-             "Content-Length: %lu\r\n"
-             "Accept-Ranges: bytes\r\n"
-             "Connection: close\r\n"
-             "\r\n",
-             strlen(body));
-
-    send(client_fd, header, strlen(header), 0); // sending header to client
-    send(client_fd, body, strlen(body), 0);     // sending body to client
+    send_response(client_fd, "public/index.html", "200 OK",
+                  "text/html"); // sending html page as response
 
     close(client_fd); // closing connection with client
   }
