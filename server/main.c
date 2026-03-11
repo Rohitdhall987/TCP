@@ -1,5 +1,7 @@
-#include "response.h"
+#include "request.h"
+#include "server.h"
 #include <netinet/in.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -7,9 +9,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
-#define PORT 8000
-#define BUFFER_SIZE 4096
 
 int server_fd; // server file descriptor
 
@@ -26,13 +25,19 @@ void handle_signal(int sig) {
 int main() {
 
   struct sigaction sa;
-  memset(&sa, 0, sizeof sa);
+  pthread_t thread_pool[THREADS_COUNT]; // pool to hold all threads
+  int status;                // used for checking error while setting up socket
+  struct sockaddr_in s_addr; // holds server socket info
+  request_queue_t requests_queue; // queue to hold incoming requests
+
+  init_queue(&requests_queue); // initializing the queue
+
+  memset(&sa, 0, sizeof sa);     // setting memory to 0
   sa.sa_handler = handle_signal; // setting signal action function
 
-  sigaction(SIGINT, &sa, NULL); // calls the function when it recives
-                                // interactive attenction signal
-  int status;
-  struct sockaddr_in s_addr; // holds server socket info
+  sigaction(
+      SIGINT, &sa,
+      NULL); // calls the function when it recives interactive attenction signal
 
   server_fd = socket(AF_INET, SOCK_STREAM, 0); // creating a socket
 
@@ -41,7 +46,7 @@ int main() {
     exit(-1);
   }
 
-  s_addr.sin_family = AF_INET;
+  s_addr.sin_family = AF_INET;   // Address family ipv4
   s_addr.sin_port = htons(PORT); // converting port from host to network bytes
   s_addr.sin_addr.s_addr = INADDR_ANY; // accepts any address
 
@@ -62,27 +67,30 @@ int main() {
     exit(-1);
   }
 
+  // initializing mutex lock
+  if (pthread_mutex_init(&lock, NULL) != 0) {
+    printf("\n mutex init failed\n");
+    return 1;
+  }
+
+  // creating worker threads to handle incoming request
+  for (int i = 0; i < THREADS_COUNT; i++) {
+    if (pthread_create(&thread_pool[i], NULL, handle_requests,
+                       (void *)&requests_queue) != 0) {
+      printf("thread creation failed at :%d\n", i);
+    }
+  }
+
   while (1) {
-    int client_fd, n; // client file descriptor and variable to hold read size
-    char req[BUFFER_SIZE]; // buffer to hold request info
+    int client_fd; // client file descriptor
     printf("Waiting for connections on port:%d\n", PORT);
 
     client_fd = accept(server_fd, NULL, NULL); // accepting all requests
 
-    while ((n = read(client_fd, req, BUFFER_SIZE - 1)) >
-           0) { // reading requst and printing to console
-      write(STDOUT_FILENO, req, n);
-
-      req[n] = '\0';
-
-      if (strstr(req, "\r\n\r\n")) // exits the loop when it reaches the end
-        break;
-    }
-
-    send_response(client_fd, "public/index.html", "200 OK",
-                  "text/html"); // sending html page as response
-
-    close(client_fd); // closing connection with client
+    pthread_mutex_lock(
+        &lock); // locking the data from being accessed by other threads
+    add_request(&requests_queue, client_fd); // adding client in the queue;
+    pthread_mutex_unlock(&lock);             // unlocking data for other threads
   }
 
   return 0;

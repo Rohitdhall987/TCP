@@ -1,7 +1,9 @@
 add_executable(server
     main.c
     files.c
+    server.c
     response.c
+    request.c
 )
 
 add_custom_command(TARGET server POST_BUILD
