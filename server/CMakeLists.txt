@@ -4,6 +4,7 @@ add_executable(server
     server.c
     response.c
     request.c
+    router.c
 )
 
 add_custom_command(TARGET server POST_BUILD

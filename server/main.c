@@ -27,6 +27,7 @@ int main() {
   struct sigaction sa;
   pthread_t thread_pool[THREADS_COUNT]; // pool to hold all threads
   int status;                // used for checking error while setting up socket
+  int opt = 1;               // used in for setting socket option to true
   struct sockaddr_in s_addr; // holds server socket info
   request_queue_t requests_queue; // queue to hold incoming requests
 
@@ -44,6 +45,12 @@ int main() {
   if (server_fd < 0) { //  exits if error
     perror("Unable to create socket, exiting from the application\n");
     exit(-1);
+  }
+
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
+                 sizeof(opt))) { // trying to forcfully connect to the port
+    perror("setsockopt failed");
+    exit(EXIT_FAILURE);
   }
 
   s_addr.sin_family = AF_INET;   // Address family ipv4

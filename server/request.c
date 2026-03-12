@@ -1,5 +1,6 @@
 #include "request.h"
 #include "response.h"
+#include "router.h"
 #include "server.h"
 #include <pthread.h>
 #include <stdlib.h>
@@ -65,20 +66,34 @@ void *handle_requests(void *requests_queue) {
       continue;
     }
 
-    int n;                 // number og bytes read
-    char req[BUFFER_SIZE]; // buffer to hold request info
+    char buffer[BUFFER_SIZE];
+    int total = 0;
 
-    // printing the request data to console
-    while ((n = read(c_fd, req, BUFFER_SIZE - 1)) > 0) {
-      write(STDOUT_FILENO, req, n);
+    // reading request and storing to the buffer
+    while (1) {
+      int n = read(c_fd, buffer + total, sizeof(buffer) - total - 1);
 
-      req[n] = '\0';
+      if (n <= 0)
+        break;
 
-      if (strstr(req, "\r\n\r\n")) // exits the loop when it reaches the end
+      total += n;
+      buffer[total] = '\0';
+
+      if (strstr(buffer, "\r\n\r\n"))
         break;
     }
-    send_response(c_fd, "public/index.html", "200 OK",
-                  "text/html"); // sending index.htm file to client
+
+    // accessing method and route from the incoming request
+    char *method = strtok(buffer, " ");
+    char *route = strtok(NULL, " ");
+
+    response_data_t res = {0}; //  used in storing response data
+    handle_routing(method, route,
+                   &res); // setting response data accoring to the request
+
+    send_response(c_fd, &res); // sending response to client
+
+    free(res.data); // freeing allocated memory
 
     close(c_fd); // closing connection with client
   }

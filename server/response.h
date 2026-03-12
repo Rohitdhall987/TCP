@@ -1,3 +1,11 @@
 #pragma once
 
-void send_response(int fd, char *file_name, char *status, char *type);
+typedef struct {
+  char *data;
+  int size;
+  char *status;
+  char *type;
+
+} response_data_t;
+
+void send_response(int fd, response_data_t *res);

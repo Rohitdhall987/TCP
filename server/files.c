@@ -1,7 +1,8 @@
 #include "files.h"
+#include <stdio.h>
 
 char *read_from_file(char *file_name, int *size) {
-  FILE *f = fopen(file_name, "r"); // opening file in readonly mode
+  FILE *f = fopen(file_name, "rb"); // opening file in readonly mode
 
   if (f == NULL) { // exiting if file didn't open
     printf("unable to open file");
