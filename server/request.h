@@ -13,5 +13,5 @@ typedef struct {
 void init_queue(request_queue_t *queue);
 void add_request(request_queue_t *queue, int c_fd);
 int get_request(request_queue_t *queue);
-
+int is_queue_empty(request_queue_t *queue);
 void *handle_requests(void *requests_queue);

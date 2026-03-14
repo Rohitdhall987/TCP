@@ -1,5 +1,6 @@
 #include "request.h"
 #include "server.h"
+#include <bits/pthreadtypes.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <signal.h>
@@ -67,7 +68,7 @@ int main() {
 
   status = listen(
       server_fd,
-      5); // ready to listen on socket, can have maximum of 5 requests in queue
+      50); // ready to listen on socket, can have maximum of 5 requests in queue
 
   if (status < 0) { // exits on error
     perror("Unable to listen to the socket\n");
@@ -77,6 +78,12 @@ int main() {
   // initializing mutex lock
   if (pthread_mutex_init(&lock, NULL) != 0) {
     printf("\n mutex init failed\n");
+    return 1;
+  }
+
+  // initializing condition variable
+  if (pthread_cond_init(&condition, NULL) != 0) {
+    printf("\n condtition init failed\n");
     return 1;
   }
 
@@ -97,6 +104,7 @@ int main() {
     pthread_mutex_lock(
         &lock); // locking the data from being accessed by other threads
     add_request(&requests_queue, client_fd); // adding client in the queue;
+    pthread_cond_signal(&condition);         // unblocking threads
     pthread_mutex_unlock(&lock);             // unlocking data for other threads
   }
 
