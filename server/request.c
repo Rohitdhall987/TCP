@@ -63,17 +63,16 @@ int is_queue_empty(request_queue_t *queue) {
 void *handle_requests(void *requests_queue) {
   // working forever so thread doesnt die
   while (1) {
-    int c_fd;
-    pthread_mutex_lock(
-        &lock); // locking the data so other thread cant access the same data
 
-    if (is_queue_empty(
-            requests_queue)) { // No work to do wait till the signal recived
+    pthread_mutex_lock(&lock);
+
+    while (is_queue_empty(requests_queue)) {
       pthread_cond_wait(&condition, &lock);
-      c_fd = get_request(requests_queue); // start all again
     }
-    pthread_mutex_unlock(
-        &lock); //  unlocking the data for other threads to access
+
+    int c_fd = get_request(requests_queue);
+
+    pthread_mutex_unlock(&lock);
 
     char buffer[BUFFER_SIZE]; // buffer to hold request data
     int total = 0;            // number of bytes read
@@ -90,6 +89,11 @@ void *handle_requests(void *requests_queue) {
 
       if (strstr(buffer, "\r\n\r\n"))
         break;
+    }
+
+    if (total == 0) {
+      close(c_fd);
+      continue;
     }
 
     // accessing method and route from the incoming request

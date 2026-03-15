@@ -6,6 +6,13 @@ add_executable(server
     request.c
     router.c
 )
+target_compile_options(server PRIVATE
+    -O3
+    -march=native
+    -flto
+    -funroll-loops
+    -fomit-frame-pointer
+)
 
 add_custom_command(TARGET server POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

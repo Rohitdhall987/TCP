@@ -26,6 +26,7 @@ void handle_signal(int sig) {
 int main() {
 
   struct sigaction sa;
+  struct sigaction pipe_sa;
   pthread_t thread_pool[THREADS_COUNT]; // pool to hold all threads
   int status;                // used for checking error while setting up socket
   int opt = 1;               // used in for setting socket option to true
@@ -34,12 +35,18 @@ int main() {
 
   init_queue(&requests_queue); // initializing the queue
 
-  memset(&sa, 0, sizeof sa);     // setting memory to 0
-  sa.sa_handler = handle_signal; // setting signal action function
+  // setting memory to 0
+  memset(&sa, 0, sizeof sa);
+  memset(&pipe_sa, 0, sizeof(pipe_sa));
+
+  // setting signal action function
+  sa.sa_handler = handle_signal;
+  pipe_sa.sa_handler = SIG_IGN;
 
   sigaction(
       SIGINT, &sa,
-      NULL); // calls the function when it recives interactive attenction signal
+      NULL); // calls the function when it recives interactive attention signal
+  sigaction(SIGPIPE, &pipe_sa, NULL); // ignores pipe signal
 
   server_fd = socket(AF_INET, SOCK_STREAM, 0); // creating a socket
 
@@ -61,14 +68,14 @@ int main() {
   status = bind(server_fd, (struct sockaddr *)&s_addr,
                 sizeof s_addr); // binding server with provided info
 
-  if (status < 0) { // esits on error
+  if (status < 0) { // exits on binding error
     perror("Unable to bind the socket\n");
     exit(-1);
   }
 
-  status = listen(
-      server_fd,
-      50); // ready to listen on socket, can have maximum of 5 requests in queue
+  status = listen(server_fd,
+                  128); // ready to listen on socket, can have maximum of 128
+                        // requests in queue
 
   if (status < 0) { // exits on error
     perror("Unable to listen to the socket\n");
@@ -83,7 +90,7 @@ int main() {
 
   // initializing condition variable
   if (pthread_cond_init(&condition, NULL) != 0) {
-    printf("\n condtition init failed\n");
+    printf("\n condition init failed\n");
     return 1;
   }
 
