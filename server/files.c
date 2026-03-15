@@ -33,7 +33,9 @@ char *read_from_file(char *file_name, int *size) {
 int find_public_file(const char *file_name, char *path) {
   char absolutePath[PATH_MAX];
 
-  char *full_path = realpath(file_name + 1, absolutePath);
+  char file_path[PATH_MAX] = "public";
+  strcat(file_path,file_name);
+  char *full_path = realpath(file_path, absolutePath);
 
   if (full_path != NULL && strstr(full_path, "public") != NULL) {
     strcpy(path, absolutePath);
