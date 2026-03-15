@@ -19,8 +19,7 @@ void handle_routing(char *method, char *route, response_data_t *res) {
   } else {
 
     const char err_msg[] = "{\"err\": \"method not supported\"}";
-    char * data = malloc(strlen(err_msg));
-    strcpy(data, err_msg);
+    char *data = strdup(err_msg);
     // setting default response
     res->data = data;
     res->size = strlen(res->data);
