@@ -7,5 +7,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g")
 
 
 add_subdirectory(server)
+add_subdirectory(client)
 
 
